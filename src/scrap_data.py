@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Main function to scrap Gavitus data
+Main functions to scrap Gavitus workout data
 
 Created on Sat Mar 19 15:39:02 2022
 
@@ -94,7 +94,11 @@ def workoutUrl(url_part):
 
 def _parseTheWorkout(body, workout):
     """
-    _parseTheWorkout
+    _parseTheWorkout:
+        parse the workout info at the lower level    
+    
+    @param body ():
+    @param workout (dict): must contain 'url' key
     """
     soup = bs4.BeautifulSoup(body, 'html.parser')
     
@@ -127,31 +131,29 @@ def _parseTheWorkout(body, workout):
         )
     
     # create dict
-    workout = {
+    return {
         'title': title,
         'url': workout.get('url'),
         'date': date,
         'description': description,
         'work': dict(zip(exercices, sets))
-    }
-    return workout
+        }
 
 # ---------------------------------------------------------
-# SCRAP AND PARSE AD : ASYNC VERSION
+# SCRAP AND PARSE WORKOUT : ASYNC VERSION
 # ---------------------------------------------------------
 def _parseWorkoutInfoFromText(workout, out_folder):
     """
-    _parseAdInfoFromText :
-        process the page for the given ad and output a dict with necessary info
-        Basically a wrapper around _parseAdLowLevel()
+    _parseWorkoutInfoFromText :
+        process the page for the given workout and output a dict with necessary info
+        Basically a wrapper around _parseTheWorkout
         
     INFO :
         This is to be used with Async version.
     
-    @param ad (dict): dict with keys {title, url, res}, with res the response from a 
+    @param workout (dict): dict with keys {title, url, res}, with res the response from a 
         request as concurrent.futures._base.Future object
-    @param watchModel (str): the name of the watch
-    @param out_folder (str): where to save the content of the ad
+    @param out_folder (str): where to save the content of the workout in raw form
     """
     res = workout['res'].result()
     # SAVE HERE ALSO
@@ -165,15 +167,14 @@ def _parseWorkoutInfoFromText(workout, out_folder):
 
 def workoutToDataFrameThreading(workoutList, out_folder):
     """
-    adsToDataFrameThreadings:
+    workoutToDataFrameThreading:
         create a pd.DataFrame with all that info, but parallel version
     
-    @param adList (list of tuples): ('adTitle', 'adUrl')
-    @param watchModel (str): the name of the watch
+    @param workoutList (list of dict): ('adTitle', 'adUrl')
     @param out_folder (str): name of the folder for output
     
-    @return: a pd.DataFrame() with ads infos, adInfos as a list, and the elements
-    of adList that raised an error (504 in general)
+    @return: a pd.DataFrame() with workout infos, workoutInfos as a list, and the elements
+    of workoutList that raised an error
     """
     startTime = time()
     session = FuturesSession(max_workers=12)
@@ -241,5 +242,3 @@ if __name__ == "__main__":
         )
     with open(OUT_FOLDER+"/"+USER+'/parsed_data.json', "w") as fp:
         json.dump(workoutInfos, fp)
-    
-    
