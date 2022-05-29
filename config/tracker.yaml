@@ -1,0 +1,11 @@
+# -------------------------------
+# config file for tracking performance
+# -------------------------------
+
+SBD:
+    - Squat
+    - Paused Bench Press
+    - Deadlift
+    
+EXTRA:
+    - Overhead Press

@@ -10,9 +10,18 @@ Created on Sun May 29 14:18:20 2022
 @author: jeremylhour
 """
 import re
+import json
+from datetime import datetime
+import pandas as pd
 
 # ---------------------------------------------------------
-# FUNCTIONS
+# LOAD CONSTANTS
+# ---------------------------------------------------------
+with open('config/rpe_table.json', 'rb') as f:
+    RPE_TABLE = json.load(f)
+
+# ---------------------------------------------------------
+# PARSING THE RAW DATA
 # ---------------------------------------------------------
 def lbs_to_kg(x, reverse=False, digits=1):
     """
@@ -32,120 +41,29 @@ def lbs_to_kg(x, reverse=False, digits=1):
 def e1RM(load, reps, rpe=None):
     """
     e1RM:
-        1-rep max estimator
+        1-rep max estimator from RPE table
         
     @param load (float):
-    @param reps (int): 
-    @param rpe (int):
+    @param reps (int or str): 
+    @param rpe (int or str):
     """
-    RPE_TABLE = {
-        1: {
-            10: 100,
-            9.5: 98,
-            9: 96,
-            8.5: 94,
-            8: 92,
-            7.5: 91,
-            7: 89,
-            6.5: 88
-            },
-        2: {
-            10: 96,
-            9.5: 94,
-            9: 92,
-            8.5: 91,
-            8: 89,
-            7.5: 88,
-            7: 86,
-            6.5: 85
-            },
-        3: {
-            10: 92,
-            9.5: 91,
-            9: 89,
-            8.5: 88,
-            8: 86,
-            7.5: 85,
-            7: 84,
-            6.5: 82
-            },
-        4: {
-            10: 89,
-            9.5: 88,
-            9: 86,
-            8.5: 85,
-            8: 84,
-            7.5: 82,
-            7: 81,
-            6.5: 80
-            },
-        5: {
-            10: 86,
-            9.5: 85,
-            9: 84,
-            8.5: 82,
-            8: 81,
-            7.5: 80,
-            7: 79,
-            6.5: 77
-            },
-        6: {
-            10: 84,
-            9.5: 82,
-            9: 81,
-            8.5: 80,
-            8: 79,
-            7.5: 77,
-            7: 76,
-            6.5: 75
-            },
-        7: {
-            10: 81,
-            9.5: 80,
-            9: 79,
-            8.5: 77,
-            8: 76,
-            7.5: 75,
-            7: 74,
-            6.5: 72
-            },
-        8: {
-            10: 79,
-            9.5: 77,
-            9: 76,
-            8.5: 75,
-            8: 74,
-            7.5: 72,
-            7: 71,
-            6.5: 69
-            },
-        9: {
-            10: 76,
-            9.5: 75,
-            9: 74,
-            8.5: 72,
-            8: 71,
-            7.5: 69,
-            7: 68,
-            6.5: 67
-            },
-        10: {
-            10: 74,
-            9.5: 72,
-            9: 71,
-            8.5: 69,
-            8: 68,
-            7.5: 67,
-            7: 65,
-            6.5: 64
-            },
-        }
+    # variable check
+    if isinstance(reps, str):
+        reps = int(reps)
+        
+    if isinstance(rpe, str):
+        rpe = float(rpe)
     
+    if isinstance(rpe, float) and (rpe % 1 == 0):
+        rpe = int(rpe)       
+    
+    # check range
     if reps not in range(1, 11):
         reps = 10
     if rpe is None or rpe < 6.5:
         rpe = 6.5
-    return 100. * load / RPE_TABLE.get(reps).get(rpe)
+        
+    return 100. * load / RPE_TABLE.get(str(reps)).get(str(rpe))
     
 def parse_set(x, convert_to_kg = True):
     """
@@ -221,6 +139,35 @@ def get_top_single(sets):
                 top_set = max(top_set, load)
                 
     return top_set
+
+# ---------------------------------------------------------
+# GET PERFORMANCE
+# ---------------------------------------------------------
+def get_historical_performance(exercise, workouts, mode="e1RM"):
+    """
+    get_historical_performance:
+        
+    @param exercise (str):
+    @param workouts (list):
+    @param mode (str):
+    """
+    if mode == "e1RM":
+        perf_getter = get_e1RM_from_sets
+    elif mode == "top-set":
+        perf_getter = get_top_set
+    else:
+        raise ValueError("'mode' arg must be either e1RM or top-set.")
+    
+    df = {}
+    for workout in workouts:
+        if exercise in workout['work'].keys():
+            event_date = datetime.fromisoformat(workout['date']).strftime('%Y-%m-%d')
+            df[event_date] = perf_getter(workout['work'][exercise])
+    
+    df = pd.DataFrame(df.values(), index=df.keys())
+    df.columns = [exercise]
+    df.index = pd.to_datetime(df.index)
+    return df.sort_index()
 
 if __name__ == "__main__":
     pass
