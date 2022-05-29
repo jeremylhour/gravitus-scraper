@@ -236,7 +236,7 @@ if __name__ == "__main__":
     print("SCRAPING EACH WORKOUT")
     print(80 * "=")
     
-    df, workoutInfos, workoutErrors= workoutToDataFrameThreading(
+    df, workoutInfos, workoutErrors = workoutToDataFrameThreading(
         workoutList=workoutList,
         out_folder=OUT_FOLDER+"/"+USER
         )
