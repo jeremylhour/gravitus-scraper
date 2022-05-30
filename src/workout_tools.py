@@ -13,6 +13,7 @@ import re
 import json
 from datetime import datetime
 import pandas as pd
+from functools import partial
 
 # ---------------------------------------------------------
 # LOAD CONSTANTS
@@ -97,77 +98,101 @@ def parse_set(x, convert_to_kg = True):
         rpe = None
     return load, reps, rpe
     
-def get_e1RM_from_sets(sets):
+def get_e1RM_from_sets(sets, convert_to_kg = True):
     """
     get_e1RM_from_sets:
         get the e1RM from sets of a given exercise
     
     @param sets (list of str):
+    @param convert_to_kg (bool): If True, converts to kg
     """
     top_set = 0.
     for item in sets:
-        top_set = max(top_set, e1RM(*parse_set(item)))            
+        top_set = max(top_set, e1RM(*parse_set(item, convert_to_kg)))            
     return top_set
 
-def get_top_set(sets):
+def get_top_set(sets, convert_to_kg = True):
     """
     get_top_set:
         get the top set for a given exercise
     
     @param sets (list of str):
+    @param convert_to_kg (bool): If True, converts to kg
     """
     top_set = 0.
     for item in sets:
-        load, reps, rpe = parse_set(item)
+        load, reps, rpe = parse_set(item, convert_to_kg)
         top_set = max(top_set, load)       
     return top_set
 
-def get_top_single(sets):
+def get_top_single(sets, convert_to_kg = True):
     """
     get_top_single:
         get the top single of an exercise
         
     @param sets (list of str):
+    @param convert_to_kg (bool): If True, converts to kg
     """
     top_set = None
     for item in sets:
-        load, reps, rpe = parse_set(item)
+        load, reps, rpe = parse_set(item, convert_to_kg)
         if reps == 1:
             if top_set is None:
                 top_set = load
             else:
                 top_set = max(top_set, load)
-                
     return top_set
+
+def get_tonnage(sets, convert_to_kg = True):
+    """
+    get_tonnage:
+        get the tonnage of an exercise
+        
+    @param sets (list of str):
+    """
+    tonnage = 0.
+    for item in sets:
+        load, reps, rpe = parse_set(item, convert_to_kg)
+        tonnage += load*reps
+    return tonnage
 
 # ---------------------------------------------------------
 # GET PERFORMANCE
 # ---------------------------------------------------------
-def get_historical_performance(exercise, workouts, mode="e1RM"):
+def get_historical_performance(exercise, workouts, mode="e1RM", convert_to_kg=True):
     """
     get_historical_performance:
         
     @param exercise (str):
     @param workouts (list):
     @param mode (str):
+    @param convert_to_kg (bool): If True, converts to kg
     """
     if mode == "e1RM":
-        perf_getter = get_e1RM_from_sets
+        perf_getter = partial(get_e1RM_from_sets, convert_to_kg=convert_to_kg)
     elif mode == "top-set":
-        perf_getter = get_top_set
+        perf_getter = partial(get_top_set, convert_to_kg=convert_to_kg)
+    elif mode == "tonnage":
+        perf_getter = partial(get_tonnage, convert_to_kg=convert_to_kg)
     else:
-        raise ValueError("'mode' arg must be either e1RM or top-set.")
+        raise ValueError("'mode' arg must be either tonnage, e1RM or top-set.")
     
     df = {}
     for workout in workouts:
         if exercise in workout['work'].keys():
-            event_date = datetime.fromisoformat(workout['date']).strftime('%Y-%m-%d')
+            try:
+                event_date = datetime.fromisoformat(workout['date']).strftime('%Y-%m-%d')
+            except:
+                event_date = datetime.strptime(workout['date'], "%d-%m-%Y")
             df[event_date] = perf_getter(workout['work'][exercise])
     
-    df = pd.DataFrame(df.values(), index=df.keys())
-    df.columns = [exercise]
-    df.index = pd.to_datetime(df.index)
-    return df.sort_index()
+    if len(df) > 0:
+        df = pd.DataFrame(df.values(), index=df.keys())
+        df.columns = [exercise]
+        df.index = pd.to_datetime(df.index)
+        return df.sort_index()
+    else:
+        return None
 
 if __name__ == "__main__":
     pass
