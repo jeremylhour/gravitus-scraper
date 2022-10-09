@@ -10,6 +10,47 @@ Created on Mon May 30 12:44:59 2022
 """
 import re
 import json
+from datetime import datetime
+
+REPL_DICT = {
+    '2 Count Paused Deadlift': '2ct Paused Deadlift @ 1 Inch Off Floor',
+    '2Ct Paused Bench Press': '2ct Pause Bench Press',
+    '2Ct Paused Incline Bench Press': '2ct Paused Incline Bench Press',
+    '2Ct Paused Squat': 'Paused Squats',
+    '2Inch Deficit Deadlift': '2" Deficit Deadlift',
+    '2Inches Deficit Deadlift': '2" Deficit Deadlift',
+    '3-0-3 Tempo Squat': '3.0.3 Tempo Squat',
+    '3Ct Paused Bench Press':'3ct Paused Bench Press',
+    'Barbell Curls': 'Barbell Curl',
+    'Barbell Rows': 'Barbell Row',
+    'Barbell Rows (Myo Reps)': 'Barbell Row',
+    'Beltless Deadlift': 'Beltless Conventional Deadlift',
+    'Beltless Ohp': 'Beltless Press',
+    'Beltless Overhead Press': 'Beltless Press',
+    'Beltless Squat (Myo Reps)': 'Beltless Squat',
+    'Bike (Liss)': 'Bike',
+    'Block Pull': 'Rack Pull',
+    'Close-Grip Bench Press': 'Close-Grip Bench Press',
+    'Hbbs': 'High-Bar Squat',
+    'High Bar Squat': 'High-Bar Squat',
+    'High-Bar Back Squat': 'High-Bar Squat',
+    'Liss (Bike)': 'Bike',
+    'Planks': 'Plank',
+    'Preacher Curls': 'Preacher Curl',
+    'Press (No Belt)': 'Beltless Press',
+    'Pull Up': 'Pull-Up',
+    'Pull Ups': 'Pull-Up',
+    'Push Down': 'Pushdown',
+    'Romanian Deadlifts': 'Romanian Deadlift',
+    'Rows': 'Barbell row',
+    'Slingshot Bench': 'Slingshot Bench Press',
+    'Squat (No Belt)': 'Beltless Squat',
+    'Tractions': 'Pull-Up',
+    'Triceps Push Down': 'Pushdown',
+    'Triceps Pushdown': 'Pushdown',
+    'Triceps Pushdown (Rope)': 'Pushdown',
+    'Triceps Pushdown (With The Rope)': 'Pushdown'
+}
 
 
 def break_raw_data(raw_data):
@@ -20,6 +61,17 @@ def break_raw_data(raw_data):
     @param raw_data (str):
     """
     return raw_data.split("\n \n")
+
+def format_exercise_name(raw_name):
+    """
+    format_exercise_name:
+    
+    @param raw_name (str): raw name from manual logs
+    """
+    name = raw_name.title()
+    for raw, clean in REPL_DICT.items():
+        name = name.replace(raw, clean)
+    return name
 
 def process_one_workout(workout):
     """
@@ -48,7 +100,7 @@ def process_one_workout(workout):
     
     parsedWorkout['work'] = {}
     for line in lines[1:]:
-        exercise = line.split(":")[0].strip()
+        exercise = format_exercise_name(line.split(":")[0].strip())
         parsedWorkout['work'][exercise] = []
         
         for item in re.findall(load_re+reps_re+rpe_re+repeated_re, line):
@@ -91,11 +143,17 @@ def process_log_data(raw_data):
           
 
 if __name__ == "__main__":
+    print("\nThis script parses the manual data workouts.\n")
+    now = datetime.now()
+    print(f"Launched on {now.strftime('%d, %b %Y, %H:%M:%S')} \n")
     
-    with open("data/manual_data/training_log_2122.txt", "r") as f:
-        raw_data = ' '.join([line for line in f.readlines()])
-        
-    parsedWorkouts = process_log_data(raw_data)
+    parsedWorkouts = []
     
-    with open("data/manual_data/parsed_training_log.json", "w") as fp:
-        json.dump(parsedWorkouts, fp)
+    for year in ["2122", "2223"]:
+        print(f"Parsing manual workouts data for year {year}")
+        with open(f"data/manual_data/training_log_{year}.txt", "r") as f:
+            raw_data = ' '.join([line for line in f.readlines()])    
+        parsedWorkouts += process_log_data(raw_data)
+    
+    with open("data/manual_data/parsed_training_log.json", "w") as f:
+        json.dump(parsedWorkouts, f)
