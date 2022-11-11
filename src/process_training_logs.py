@@ -12,6 +12,7 @@ import re
 import json
 from datetime import datetime
 
+# Define the replacement dictionary for normalizing name of exercises
 REPL_DICT = {
     '2 Count Paused Deadlift': '2ct Paused Deadlift @ 1 Inch Off Floor',
     '2Ct Paused Bench Press': '2ct Pause Bench Press',
@@ -52,8 +53,7 @@ REPL_DICT = {
     'Triceps Pushdown (With The Rope)': 'Pushdown'
 }
 
-
-def break_raw_data(raw_data):
+def break_raw_data(raw_data: str) -> str:
     """
     break_raw_data:
         break the raw log data into workouts
@@ -62,7 +62,7 @@ def break_raw_data(raw_data):
     """
     return raw_data.split("\n \n")
 
-def format_exercise_name(raw_name):
+def format_exercise_name(raw_name: str) -> str:
     """
     format_exercise_name:
     
@@ -73,7 +73,7 @@ def format_exercise_name(raw_name):
         name = name.replace(raw, clean)
     return name
 
-def process_one_workout(workout):
+def process_one_workout(workout: str) -> dict:
     """
     process_one_workout:
         process one workout to the format that comes out of the processing
@@ -118,10 +118,9 @@ def process_one_workout(workout):
                 
             for i in range(int(n_)):
                 parsedWorkout['work'][exercise].append(parsed_item)
-                
     return parsedWorkout
 
-def process_log_data(raw_data):
+def process_log_data(raw_data: str) -> list:
     """
     process_log_data:
         process the whole log data file

@@ -14,39 +14,41 @@ import json
 from datetime import datetime
 import pandas as pd
 from functools import partial
+from typing import List
 
 # ---------------------------------------------------------
 # LOAD CONSTANTS
 # ---------------------------------------------------------
+KG_IN_LBS = 2.2046226218
+
 with open('config/rpe_table.json', 'rb') as f:
     RPE_TABLE = json.load(f)
 
 # ---------------------------------------------------------
 # PARSING THE RAW DATA
 # ---------------------------------------------------------
-def lbs_to_kg(x, reverse=False, digits=1):
+def lbs_to_kg(x: float, reverse: bool = False, digits: int = 1) -> float:
     """
     convertLBStoKG:
         Convert from lbs to kg, or the reverse
         
     @param x (float):
     @param reverse (bool): If True, convert from kg to lbs
+    @param digits (int): rounding
     """
-    KG_IN_LBS = 2.2046226218
-    
     if reverse:
         return round(x * KG_IN_LBS, digits)
     else:
         return round(x / KG_IN_LBS, digits)
     
-def e1RM(load, reps, rpe=None):
+def e1RM(load: float, reps: int, rpe: float=None) -> float:
     """
     e1RM:
         1-rep max estimator from RPE table
         
-    @param load (float):
-    @param reps (int or str): 
-    @param rpe (int or str):
+    @param load (float): the load to be converted
+    @param reps (int or str): For how many reps was the load lifted ?
+    @param rpe (float or str): How hard did it feel ?
     """
     # variable check
     if isinstance(reps, str):
@@ -66,7 +68,7 @@ def e1RM(load, reps, rpe=None):
         
     return 100. * load / RPE_TABLE.get(str(reps)).get(str(rpe))
     
-def parse_set(x, convert_to_kg = True):
+def parse_set(x: str, convert_to_kg: bool = True):
     """
     parse_set:
         parse the set to collect infos
@@ -98,7 +100,7 @@ def parse_set(x, convert_to_kg = True):
         rpe = None
     return load, reps, rpe
     
-def get_e1RM_from_sets(sets, convert_to_kg = True):
+def get_e1RM_from_sets(sets: List[str], convert_to_kg: bool = True) -> float:
     """
     get_e1RM_from_sets:
         get the e1RM from sets of a given exercise
@@ -111,7 +113,7 @@ def get_e1RM_from_sets(sets, convert_to_kg = True):
         top_set = max(top_set, e1RM(*parse_set(item, convert_to_kg)))            
     return top_set
 
-def get_top_set(sets, convert_to_kg = True):
+def get_top_set(sets: List[str], convert_to_kg: bool = True) -> float:
     """
     get_top_set:
         get the top set for a given exercise
@@ -125,7 +127,7 @@ def get_top_set(sets, convert_to_kg = True):
         top_set = max(top_set, load)       
     return top_set
 
-def get_top_single(sets, convert_to_kg = True):
+def get_top_single(sets: List[str], convert_to_kg: bool = True) -> float:
     """
     get_top_single:
         get the top single of an exercise
@@ -143,7 +145,7 @@ def get_top_single(sets, convert_to_kg = True):
                 top_set = max(top_set, load)
     return top_set
 
-def get_tonnage(sets, convert_to_kg = True):
+def get_tonnage(sets: List[str], convert_to_kg: bool = True):
     """
     get_tonnage:
         get the tonnage of an exercise
@@ -159,7 +161,7 @@ def get_tonnage(sets, convert_to_kg = True):
 # ---------------------------------------------------------
 # GET PERFORMANCE
 # ---------------------------------------------------------
-def get_historical_performance(exercise, workouts, mode="e1RM", convert_to_kg=True):
+def get_historical_performance(exercise: str, workouts: list, mode: str = "e1RM", convert_to_kg: bool = True) -> pd.DataFrame:
     """
     get_historical_performance:
         

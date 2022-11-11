@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Main functions to scrap Gavitus workout data
+Main functions to scrap Gavitus workout data from the website
 
 Created on Sat Mar 19 15:39:02 2022
 
@@ -16,6 +16,7 @@ from datetime import datetime
 import yaml
 import json
 import pandas as pd
+from typing import List
 
 from requests_futures.sessions import FuturesSession
 
@@ -23,7 +24,7 @@ from requests_futures.sessions import FuturesSession
 # ---------------------------------------------------------
 # FUNCTIONS TO COLLECT THE WORKOUT URLs
 # ---------------------------------------------------------
-def createUrl(user: str, pageNb: int = 0):
+def createUrl(user: str, pageNb: int = 0) -> str:
     """
     createUrl :
         search for ads related to the given 'watchModel' arg in the cda
@@ -35,7 +36,7 @@ def createUrl(user: str, pageNb: int = 0):
     """
     return 'https://gravitus.com/users/'+str(user)+'/?page='+str(pageNb)
 
-def collectWorkouts(user: str, session, out_folder: str = "data"):
+def collectWorkouts(user: str, session, out_folder: str = "data") -> List[dict]:
     """
     collectWorkouts :
         loops through the pages of a Gravitus user and collect workout url
@@ -77,25 +78,27 @@ def collectWorkouts(user: str, session, out_folder: str = "data"):
         json.dump(workoutList, f, ensure_ascii=False)
     return workoutList
 
+
 # ---------------------------------------------------------
 # PARSE WORKOUT AFTER THE RESPONSE
 # ---------------------------------------------------------
-def workoutUrl(url_part):
+def workoutUrl(url_part: str) -> str:
     """
     createUrl :
-        search for ads related to the given 'watchModel' arg in the cda
+        search for ads related to the given 'url_part' arg in the cda
+        Example "/workouts/2741936790/"
         
     @param url_part (str): user name
     
     @return: the url to call
     """
-    "/workouts/2741936790/"
     return 'https://gravitus.com'+url_part
 
-def _parseTheWorkout(body, workout):
+def _parseTheWorkout(body: str, workout: dict) -> dict:
     """
     _parseTheWorkout:
-        parse the workout info at the lower level    
+        parse the workout info at the lower level,
+        and return the appropriate dict  
     
     @param body ():
     @param workout (dict): must contain 'url' key
@@ -142,7 +145,7 @@ def _parseTheWorkout(body, workout):
 # ---------------------------------------------------------
 # SCRAP AND PARSE WORKOUT : ASYNC VERSION
 # ---------------------------------------------------------
-def _parseWorkoutInfoFromText(workout, out_folder):
+def _parseWorkoutInfoFromText(workout, out_folder: str) -> dict:
     """
     _parseWorkoutInfoFromText :
         process the page for the given workout and output a dict with necessary info
